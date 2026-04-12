@@ -7,11 +7,8 @@ on:
       - '**.md'
       - '.github/**'
       - '!.github/workflows/build.yml'
-  pull_request:
-    branches: [ "main", "dev" ]
-    paths-ignore:
-      - '**.md'
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -40,7 +37,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
-          cache-read-only: ${{ github.event_name == 'pull_request' }}
+          cache-read-only: false
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -56,7 +53,6 @@ jobs:
           echo 'android.native.buildOutput=verbose' >> ~/.gradle/gradle.properties
 
       - name: Configure Signing
-        if: github.event_name != 'pull_request'
         run: |
           echo "storeFile=${{ github.workspace }}/keystore.jks" >> local.properties
           echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
@@ -66,7 +62,6 @@ jobs:
           echo "${{ secrets.KEYSTORE_JKS }}" | base64 --decode > keystore.jks
 
       - name: Configure Secrets
-        if: github.event_name != 'pull_request'
         run: |
           echo "apiId=${{ secrets.API_ID }}" >> local.properties
           echo "apiHash=${{ secrets.API_HASH }}" >> local.properties
@@ -74,28 +69,16 @@ jobs:
           echo "helperBotUsername=${{ secrets.HELPER_BOT_USERNAME }}" >> local.properties
           echo "sentryDsn=${{ secrets.SENTRY_DSN }}" >> local.properties
 
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > TMessagesProj_App/google-services.json
           echo "${{ secrets.SENTRY_PROPERTIES }}" | base64 --decode > sentry.properties
 
-      - name: Configure Build
-        run: |
-          echo "twpicBotUsername=${{ secrets.TWPIC_BOT_USERNAME }}" >> local.properties
-
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > TMessagesProj_App/google-services.json
-
-      - name: Build with Gradle (Debug)
-        if: github.event_name == 'pull_request'
-        run: |
-          ./gradlew :TMessagesProj_App:assembleDebug
-
       - name: Build with Gradle
-        if: github.event_name != 'pull_request'
         run: |
           ./gradlew assembleRelease
           ./gradlew bundlePlay
           ./gradlew sentryUploadSourceBundlePlay
 
       - name: Attest
-        if: github.event_name != 'pull_request'
         uses: actions/attest@v4
         with:
           subject-path: '${{ github.workspace }}/TMessagesProj_App/build/outputs'
