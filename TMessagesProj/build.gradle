@@ -84,6 +84,7 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:5.4.0'
     implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:6.1'
     implementation 'org.apache.commons:commons-text:1.15.0'
+    implementation 'net.java.dev.jna:jna:5.14.0@aar'
 
     implementation 'com.google.firebase:firebase-analytics:23.2.0'
     implementation 'io.sentry:sentry-android:8.43.2'
@@ -95,7 +96,7 @@ lsparanoid {
 }
 
 android {
-    sourceSets.main.jniLibs.srcDirs = ['./jni/']
+    sourceSets.main.jniLibs.srcDirs = ['./jni/', 'src/main/jniLibs']
 
     externalNativeBuild {
         cmake {
@@ -146,6 +147,9 @@ android {
     }
 
     defaultConfig {
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
         externalNativeBuild {
             cmake {
                 arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-23', '-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON'

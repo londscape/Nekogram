@@ -2,22 +2,37 @@ import com.android.build.api.variant.FilterConfiguration
 
 plugins {
     id 'com.android.application'
-    id 'com.google.gms.google-services'
-    id 'io.sentry.android.gradle'
+}
+
+Properties rootLocalProperties = new Properties()
+if (project.rootProject.file('local.properties').exists()) {
+    rootLocalProperties.load(project.rootProject.file('local.properties').newDataInputStream())
+}
+
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.lifecycle("google-services.json not found; Firebase Google Services plugin is disabled for this local build")
+}
+
+if (rootLocalProperties.getProperty("sentryDsn")) {
+    apply plugin: 'io.sentry.android.gradle'
 }
 
 dependencies {
     implementation project(':TMessagesProj')
 }
 
-sentry {
-    uploadNativeSymbols = true
-    includeSourceContext = true
-    additionalSourceDirsForSourceContext = [ '../TMessagesProj/src/main/java' ]
-    autoInstallation {
-        enabled = false
+if (plugins.hasPlugin("io.sentry.android.gradle")) {
+    sentry {
+        uploadNativeSymbols = true
+        includeSourceContext = true
+        additionalSourceDirsForSourceContext = [ '../TMessagesProj/src/main/java' ]
+        autoInstallation {
+            enabled = false
+        }
+        ignoredBuildTypes = ["debug"]
     }
-    ignoredBuildTypes = ["debug"]
 }
 
 android {
@@ -73,6 +88,9 @@ android {
         versionName APP_VERSION_NAME
 
         multiDexEnabled true
+        ndk {
+            abiFilters "arm64-v8a"
+        }
 
         manifestPlaceholders = [MAPS_API_KEY: localProperties.get("mapsApiKey")]
     }
@@ -86,10 +104,10 @@ android {
     splits.abi {
         var buildingBundle = gradle.startParameter.taskNames.any { it.startsWith("bundle") }
         enable !buildingBundle
-        universalApk true
+        universalApk false
 
         reset()
-        include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
+        include "arm64-v8a"
     }
     namespace 'org.telegram.messenger.regular'
 

@@ -172,3 +172,12 @@
 
 -dontwarn android.support.annotation.*
 -dontwarn androidx.compose.**
+
+# TG WS Proxy / JNA
+-dontwarn com.sun.jna.**
+-keep class com.sun.jna.** { *; }
+-keep interface com.sun.jna.Library { *; }
+-keep class org.telegram.messenger.wsproxy.** { *; }
+-keepclassmembers class * implements com.sun.jna.Library {
+    <methods>;
+}

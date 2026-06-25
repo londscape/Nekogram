@@ -1,0 +1,5 @@
+sdk.dir=/Users/macbook/Library/Android/sdk
+apiId=YOUR_TELEGRAM_API_ID
+apiHash=YOUR_TELEGRAM_API_HASH
+mapsApiKey=
+sentryDsn=

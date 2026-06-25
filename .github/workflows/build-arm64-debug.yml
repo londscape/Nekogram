@@ -1,0 +1,59 @@
+name: Build arm64 debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android packages
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          CMAKE_PACKAGE="$(sdkmanager --list | awk '/^[[:space:]]*cmake;[0-9]/{print $1}' | sort -V | tail -n 1)"
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" "ndk;27.3.13750724" "$CMAKE_PACKAGE"
+
+      - name: Validate Telegram API secrets
+        shell: bash
+        run: |
+          test -n "${{ secrets.TELEGRAM_API_ID }}" || (echo "::error::Set TELEGRAM_API_ID in repository secrets" && exit 1)
+          test -n "${{ secrets.TELEGRAM_API_HASH }}" || (echo "::error::Set TELEGRAM_API_HASH in repository secrets" && exit 1)
+
+      - name: Create local.properties
+        shell: bash
+        run: |
+          cat > local.properties <<EOF
+          sdk.dir=${ANDROID_HOME}
+          apiId=${{ secrets.TELEGRAM_API_ID }}
+          apiHash=${{ secrets.TELEGRAM_API_HASH }}
+          mapsApiKey=
+          sentryDsn=
+          EOF
+
+      - name: Build
+        run: ./gradlew :TMessagesProj_App:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nekogram-tg-ws-proxy-arm64-debug
+          path: TMessagesProj_App/build/outputs/apk/debug/*.apk

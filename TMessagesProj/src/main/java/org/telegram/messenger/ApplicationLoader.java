@@ -44,6 +44,7 @@ import org.telegram.ui.Components.ForegroundDetector;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.IUpdateLayout;
 import org.telegram.ui.LauncherIconController;
+import org.telegram.messenger.wsproxy.TgWsProxyBootstrap;
 
 import java.io.File;
 import java.util.Locale;
@@ -253,6 +254,7 @@ public class ApplicationLoader extends Application {
         }
 
         SharedConfig.loadConfig();
+        TgWsProxyBootstrap.start(ApplicationLoader.applicationContext);
         SharedPrefsHelper.init(applicationContext);
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             UserConfig.getInstance(a).loadConfig();

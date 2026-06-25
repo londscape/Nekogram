@@ -330,6 +330,15 @@
     <string name="FrontCamera">Front Camera</string>
     <string name="RearCamera">Rear Camera</string>
 
+    <string name="TgWsProxyTitle">Telegram WS Proxy</string>
+    <string name="TgWsProxyChannel">Telegram WS Proxy</string>
+    <string name="TgWsProxyStarting">Starting local WS proxy...</string>
+    <string name="TgWsProxyRunning">Local WS proxy is running</string>
+    <string name="TgWsProxyStartFailed">Local WS proxy start failed, code %1$d</string>
+    <string name="TgWsProxyStartError">Local WS proxy start error</string>
+    <string name="TgWsProxyRestart">Restart</string>
+    <string name="TgWsProxyStop">Stop</string>
+
     <!-- Accessibility -->
     <string name="AccessibilitySettings">Accessibility settings</string>
 </resources>
