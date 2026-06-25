@@ -31,7 +31,7 @@ jobs:
       - name: Install Android packages
         shell: bash
         run: |
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0" "ndk;27.3.13750724" "cmake;4.0.3"
+          sdkmanager --install "platforms;android-36" "build-tools;36.1.0" "ndk;27.3.13750724" "cmake;4.0.3"
 
       - name: Validate Telegram API secrets
         shell: bash
