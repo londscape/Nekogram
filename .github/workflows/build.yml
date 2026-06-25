@@ -14,6 +14,7 @@ jobs:
     env:
       TG_API_ID: ${{ secrets.TELEGRAM_API_ID || secrets.API_ID }}
       TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH || secrets.API_HASH }}
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx7g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8 -XX:+UseParallelGC
 
     steps:
       - name: Checkout
@@ -33,6 +34,18 @@ jobs:
         run: |
           sdkmanager --install "platforms;android-36" "build-tools;36.1.0" "ndk;27.3.13750724" "cmake;4.0.3"
 
+      - name: Configure Gradle memory
+        shell: bash
+        run: |
+          mkdir -p ~/.gradle
+          cat > ~/.gradle/gradle.properties <<EOF
+          org.gradle.jvmargs=-Xmx7g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8 -XX:+UseParallelGC
+          org.gradle.workers.max=1
+          org.gradle.parallel=false
+          org.gradle.daemon=false
+          kotlin.daemon.jvmargs=-Xmx2g
+          EOF
+
       - name: Validate Telegram API secrets
         shell: bash
         run: |
@@ -51,7 +64,7 @@ jobs:
           EOF
 
       - name: Build arm64 debug APK
-        run: ./gradlew :TMessagesProj_App:assembleDebug --no-daemon
+        run: ./gradlew :TMessagesProj_App:assembleDebug --no-daemon --max-workers=1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
