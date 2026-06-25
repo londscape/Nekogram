@@ -9,11 +9,7 @@ if (project.rootProject.file('local.properties').exists()) {
     rootLocalProperties.load(project.rootProject.file('local.properties').newDataInputStream())
 }
 
-if (file('google-services.json').exists()) {
-    apply plugin: 'com.google.gms.google-services'
-} else {
-    logger.lifecycle("google-services.json not found; Firebase Google Services plugin is disabled for this local build")
-}
+logger.lifecycle("Firebase Google Services plugin is disabled for this local TG WS Proxy build")
 
 if (rootLocalProperties.getProperty("sentryDsn")) {
     apply plugin: 'io.sentry.android.gradle'
