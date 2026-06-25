@@ -31,7 +31,7 @@ jobs:
       - name: Install Android packages
         shell: bash
         run: |
-          yes | sdkmanager --licenses >/dev/null
+          yes | sdkmanager --licenses >/dev/null || true
           CMAKE_PACKAGE="$(sdkmanager --list | awk '/^[[:space:]]*cmake;[0-9]/{print $1}' | sort -V | tail -n 1)"
           sdkmanager "platforms;android-37" "build-tools;37.0.0" "ndk;27.3.13750724" "$CMAKE_PACKAGE"
 
