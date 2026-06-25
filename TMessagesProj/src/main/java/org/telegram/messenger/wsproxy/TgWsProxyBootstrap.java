@@ -8,7 +8,6 @@ import android.os.Build;
 
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.tgnet.ConnectionsManager;
 
 import java.security.SecureRandom;
 
@@ -40,7 +39,10 @@ public final class TgWsProxyBootstrap {
 
         String secret = ensureSecret(settings);
         applyTelegramProxy(appContext, secret);
-        startService(appContext, settings, secret);
+        new android.os.Handler(appContext.getMainLooper()).postDelayed(
+                () -> startService(appContext, settings, secret),
+                2500
+        );
     }
 
     private static void startService(Context context, SharedPreferences settings, String secret) {
@@ -86,7 +88,6 @@ public final class TgWsProxyBootstrap {
                     .putBoolean("proxy_enabled_calls", true)
                     .apply();
 
-            ConnectionsManager.setProxySettings(true, DEFAULT_BIND_IP, DEFAULT_PORT, "", "", proxySecret);
         } catch (Throwable throwable) {
             FileLog.e(throwable);
         }

@@ -93,8 +93,15 @@ public class TgWsProxyService extends Service {
         lastCfEnabled = cfEnabled;
         lastCfDomain = cfDomain;
 
-        startForegroundCompat(getString(R.string.TgWsProxyStarting));
-        acquireWakeLock();
+        try {
+            startForegroundCompat(getString(R.string.TgWsProxyStarting));
+            acquireWakeLock();
+        } catch (Throwable throwable) {
+            running = false;
+            FileLog.e(throwable);
+            stopSelf();
+            return;
+        }
 
         if (running) {
             updateNotification(getString(R.string.TgWsProxyRunning));
