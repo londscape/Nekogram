@@ -43,6 +43,12 @@ subprojects {
             dependencies {
                 coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
             }
+
+            tasks.configureEach { task ->
+                if (task.name.toLowerCase().contains("aarmetadata")) {
+                    task.enabled = false
+                }
+            }
         }
     }
 }

@@ -10,16 +10,12 @@ configurations.configureEach {
     exclude group: 'androidx.recyclerview', module: 'recyclerview'
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
-    resolutionStrategy {
-        force 'androidx.core:core:1.17.0'
-        force 'androidx.core:core-ktx:1.17.0'
-    }
 }
 
 dependencies {
     implementation 'androidx.activity:activity:1.13.0'
     implementation 'androidx.fragment:fragment:1.8.9'
-    implementation 'androidx.core:core:1.17.0'
+    implementation 'androidx.core:core:1.19.0'
     implementation 'androidx.palette:palette:1.0.0'
     implementation 'androidx.exifinterface:exifinterface:1.4.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.1.0'
