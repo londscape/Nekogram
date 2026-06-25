@@ -1,127 +1,62 @@
 name: Build
 
 on:
-  push:
-    branches: [ "main", "dev", "ci" ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - '!.github/workflows/build.yml'
-  workflow_call:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      attestations: write
-      artifact-metadata: write
+    timeout-minutes: 120
     env:
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_HARDLINK: "true"
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_MAXSIZE: "10G"
+      TG_API_ID: ${{ secrets.TELEGRAM_API_ID || secrets.API_ID }}
+      TG_API_HASH: ${{ secrets.TELEGRAM_API_HASH || secrets.API_HASH }}
+
     steps:
-      - uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
+      - name: Set up JDK
+        uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Set up ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: false
+          distribution: temurin
+          java-version: 21
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-        with:
-          packages: "build-tools;36.1.0 ndk;27.3.13750724 platforms;android-36"
+        uses: android-actions/setup-android@v3
 
-      - name: Configure Gradle
+      - name: Install Android packages
+        shell: bash
         run: |
-          mkdir -p ~/.gradle
-          echo 'org.gradle.caching=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.parallel=true' >> ~/.gradle/gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx8192m -Dfile.encoding=UTF-8 -XX:+UseParallelGC' >> ~/.gradle/gradle.properties
-          echo 'android.native.buildOutput=verbose' >> ~/.gradle/gradle.properties
+          yes | sdkmanager --licenses >/dev/null
+          CMAKE_PACKAGE="$(sdkmanager --list | awk '/^[[:space:]]*cmake;[0-9]/{print $1}' | sort -V | tail -n 1)"
+          sdkmanager "platforms;android-37" "build-tools;37.0.0" "ndk;27.3.13750724" "$CMAKE_PACKAGE"
 
-      - name: Configure Signing
+      - name: Validate Telegram API secrets
+        shell: bash
         run: |
-          echo "storeFile=${{ github.workspace }}/keystore.jks" >> local.properties
-          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> local.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
-          
-          echo "${{ secrets.KEYSTORE_JKS }}" | base64 --decode > keystore.jks
+          test -n "$TG_API_ID" || (echo "::error::Set TELEGRAM_API_ID or API_ID in repository secrets" && exit 1)
+          test -n "$TG_API_HASH" || (echo "::error::Set TELEGRAM_API_HASH or API_HASH in repository secrets" && exit 1)
 
-      - name: Configure Secrets
+      - name: Create local.properties
+        shell: bash
         run: |
-          echo "apiId=${{ secrets.API_ID }}" >> local.properties
-          echo "apiHash=${{ secrets.API_HASH }}" >> local.properties
-          echo "helperBotId=${{ secrets.HELPER_BOT_ID }}" >> local.properties
-          echo "helperBotUsername=${{ secrets.HELPER_BOT_USERNAME }}" >> local.properties
-          echo "sentryDsn=${{ secrets.SENTRY_DSN }}" >> local.properties
-          echo "mapsApiKey=${{ secrets.MAPS_API_KEY }}" >> local.properties
+          cat > local.properties <<EOF
+          sdk.dir=${ANDROID_HOME}
+          apiId=${TG_API_ID}
+          apiHash=${TG_API_HASH}
+          mapsApiKey=
+          sentryDsn=
+          EOF
 
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 --decode > TMessagesProj_App/google-services.json
-          echo "${{ secrets.SENTRY_PROPERTIES }}" | base64 --decode > sentry.properties
+      - name: Build arm64 debug APK
+        run: ./gradlew :TMessagesProj_App:assembleDebug --no-daemon
 
-      - name: Build with Gradle
-        run: |
-          ./gradlew assembleRelease
-          ./gradlew bundlePlay
-          ./gradlew sentryUploadSourceBundlePlay
-
-      - name: Attest
-        uses: actions/attest@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          subject-path: '${{ github.workspace }}/TMessagesProj_App/build/outputs'
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: outputs
-          path: TMessagesProj_App/build/outputs
-
-      - name: Upload arm64-v8a build apk
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/apk/release/*-arm64-v8a.apk
-          archive: false
-
-      - name: Upload armeabi-v7a build apk
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/apk/release/*-armeabi-v7a.apk
-          archive: false
-
-      - name: Upload universal build apk
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/apk/release/*-universal.apk
-          archive: false
-
-      - name: Upload x86 build apk
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/apk/release/*-x86.apk
-          archive: false
-
-      - name: Upload x86_64 build apk
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/apk/release/*-x86_64.apk
-          archive: false
-
-      - name: Upload build bundle
-        uses: actions/upload-artifact@v7
-        with:
-          path: TMessagesProj_App/build/outputs/bundle/play/*-play.aab
-          archive: false
+          name: nekogram-tg-ws-proxy-arm64-debug
+          path: TMessagesProj_App/build/outputs/apk/debug/*.apk
